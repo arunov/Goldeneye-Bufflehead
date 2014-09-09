@@ -1,0 +1,4 @@
+config SECURITY_RBAC
+	bool "Role-based Access Control Support"
+	help
+	  This selects Role-based Access Control security.
