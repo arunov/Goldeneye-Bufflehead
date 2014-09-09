@@ -122,7 +122,7 @@ source security/smack/Kconfig
 source security/tomoyo/Kconfig
 source security/apparmor/Kconfig
 source security/yama/Kconfig
-source security/rbac/Kconfig
+source security/gebh/Kconfig
 
 source security/integrity/Kconfig
 

@@ -1,0 +1,4 @@
+config SECURITY_GEBH
+	bool "Goldeneye Bufflehead Role-based Access Control Support"
+	help
+	  This selects Goldeneye Bufflehead Role-based Access Control security.
