@@ -4,6 +4,9 @@
 #include <linux/security.h>
 #include <linux/fs.h>
 #include <linux/dcache.h>
+#include <linux/cred.h>
+#include <linux/sched.h>
+#include <linux/types.h>
 
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("Goldeneye Bufflehead, a Role Based Access Control security\
@@ -11,7 +14,12 @@ MODULE_DESCRIPTION("Goldeneye Bufflehead, a Role Based Access Control security\
 MODULE_AUTHOR("Arun Olappamanna Vasudevan <arunov1986@gmail.com>");
 
 int gebh_inode_create(struct inode *dir, struct dentry *dentry, umode_t mode) {
-    printk(KERN_INFO "%s, %lu", __func__, dir->i_ino);
+    printk(KERN_INFO "%s, %lu\n", __func__, dir->i_ino);
+    printk(KERN_INFO "%s, Current user id: %u\n", __func__, current_uid().val);
+    if(dir->i_ino == 202738620) {
+        printk(KERN_INFO "%s, permission denied\n", __func__);
+        return -EACCES;
+    }
     return 0;
 }
 

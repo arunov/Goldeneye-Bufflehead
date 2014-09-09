@@ -4,5 +4,5 @@
 
 obj-$(CONFIG_SECURITY_GEBH) := gebh.o
 
-gebh-y := lsm-inode.o
+gebh-y := gebh-hooks.o
 
