@@ -2,22 +2,16 @@
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/security.h>
-#include <linux/fs.h>
 #include <linux/dcache.h>
 #include <linux/cred.h>
-#include <linux/sched.h>
-#include <linux/types.h>
-#include <linux/syscalls.h>
-#include <linux/fcntl.h>
-#include <asm/uaccess.h>
-#include "file_utils.h"
+#include "policy.h"
 
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("Goldeneye Bufflehead, a Role Based Access Control security\
  solution");
 MODULE_AUTHOR("Arun Olappamanna Vasudevan <arunov1986@gmail.com>");
 
-static void read_file(char *filename) {
+/*static void read_file(char *filename) {
   int fd;
   char buf[1];
   char x = 'x';
@@ -37,50 +31,18 @@ static void read_file(char *filename) {
     sys_close(fd);
   }
   set_fs(old_fs);
-}
+}*/
 
 int gebh_inode_create(struct inode *dir, struct dentry *dentry, umode_t mode) {
-    struct file *fd;
-    char x[51];
-    mm_segment_t fs;
     printk(KERN_INFO "%s, %lu\n", __func__, dir->i_ino);
     printk(KERN_INFO "%s, Current user id: %u\n", __func__, current_uid().val);
     if(dir->i_ino == 202738620) {
         printk(KERN_INFO "%s, permission denied\n", __func__);
         return -EACCES;
     }
-    //if(current_uid().val == 0) return 0;
-    read_file("/root/tfile");
+    //read_file("/root/tfile");
+    check_perm(current_uid().val, dir->i_ino);
     return 0;
-    fd = filp_open("/root/tfile", O_RDONLY, 0);
-    if(fd == NULL) {
-        printk(KERN_INFO "filp_open error!!.\n");
-        return 0;
-    }
-    else {
-        // Get current segment descriptor
-        fs = get_fs();
-        // Set segment descriptor associated to kernel space
-        set_fs(get_ds());
-        // Read the file
-        fd->f_op->read(fd, x, 50, &fd->f_pos);
-        x[50] = '\0';
-        // Restore segment descriptor
-        set_fs(fs);
-        // See what we read from file
-        printk(KERN_INFO "buf:%s\n",x);
-    }
-    filp_close(fd, NULL);
-    return 0;
-    /*fd = file_open("/root/tfile", O_RDONLY, 0);
-    if(fd == NULL) {
-        printk(KERN_INFO "Unable to open /root/tfile");
-        return 0;
-    }
-    file_read(fd, 0, x, 50);
-    printk(KERN_INFO "%s", x);
-    file_close(fd);
-    return 0;*/
 }
 
 int gebh_inode_unlink(struct inode *dir, struct dentry *dentry) {

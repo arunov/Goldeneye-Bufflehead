@@ -4,5 +4,5 @@
 
 obj-$(CONFIG_SECURITY_GEBH) := gebh.o
 
-gebh-y := gebh-hooks.o file_utils.o
+gebh-y := hooks.o policy.o
 
