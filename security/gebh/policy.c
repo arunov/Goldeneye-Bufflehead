@@ -1,8 +1,5 @@
 #include "policy.h"
 
-#define UID_BUF_LEN (sizeof(unsigned int) * 2)
-#define INODE_BUF_LEN (sizeof(unsigned long) *2)
-#define POLICY_FILE "/etc/gebh_policy"
 #define IS_HEX(x) ((x >= '0' && x <= '9') || (x >= 'a' && x <= 'f') || (x >= 'A' && x <= 'F'))
 
 static inline int read_hex(int fd, char *buf, int len, char *x, int *out_len) {
@@ -27,7 +24,7 @@ static inline int read_hex(int fd, char *buf, int len, char *x, int *out_len) {
     return 0;
 }
 
-static inline int read_line(int fd, char *uid_buf, char *inode_buf, int *eof) {
+static inline int read_line(int fd, char *buf1, int len1, char *buf2, int len2, int *eof) {
     char c;
     int len;
     int ret;
@@ -46,7 +43,7 @@ static inline int read_line(int fd, char *uid_buf, char *inode_buf, int *eof) {
             goto ignore_line;
         }
         // read uid
-        ret = read_hex(fd, uid_buf, UID_BUF_LEN, &c, &len);
+        ret = read_hex(fd, buf1, len1, &c, &len);
         printk(KERN_INFO "gebh: uid read_hex returned %d, len %d", ret, len);
         if(ret == -1) goto ignore_line;
         if(ret == -2) {
@@ -59,7 +56,7 @@ static inline int read_line(int fd, char *uid_buf, char *inode_buf, int *eof) {
             return -1;
         }
         // read inode
-        ret = read_hex(fd, inode_buf, INODE_BUF_LEN, &c, &len);
+        ret = read_hex(fd, buf2, len2, &c, &len);
         printk(KERN_INFO "gebh: inode read_hex returned %d, len %d", ret, len);
         if(ret == -1) goto ignore_line;
         if(ret == -2) {
@@ -102,42 +99,44 @@ static inline unsigned long strhex2num(char *buf, int len) {
     return value;
 }
 
-int check_perm(unsigned int uid, unsigned long inode) {
-    char uid_buf[UID_BUF_LEN + 1];
-    char inode_buf[INODE_BUF_LEN + 1];
+static inline int search_line(const char *filename, unsigned long val1, int len1, unsigned long *val2, int len2, int match) {
+    char buf1[len1 + 1];
+    char buf2[len2 + 1];
     int fd;
     int eof;
     int ret;
-    unsigned int uid_in_policy;
-    unsigned long inode_in_policy;
+    unsigned long fval1;
+    unsigned long fval2;
     mm_segment_t old_fs;
-    uid_buf[UID_BUF_LEN] = '\0';
-    inode_buf[INODE_BUF_LEN] = '\0';
-    // if root, allow
-    if(uid == 0) return 0;
+    buf1[len1] = '\0';
+    buf2[len2] = '\0';
     old_fs = get_fs();
     set_fs(KERNEL_DS);
-    // open policy file
-    fd = sys_open(POLICY_FILE, O_RDONLY, 0);
+    // open file
+    fd = sys_open(filename, O_RDONLY, 0);
     if(fd < 0) {
-        printk(KERN_INFO "gebh: unable to open policy file");
+        printk(KERN_INFO "gebh: unable to open file %s\n", filename);
         set_fs(old_fs);
-        return -EACCES;
+        return -1;
     }
-    ret = -EACCES;
+    ret = -1;
     while(1) {
         // read line
-        if(read_line(fd, uid_buf, inode_buf, &eof) == -1) {
+        if(read_line(fd, buf1, len1, buf2, len2, &eof) == -1) {
             printk(KERN_INFO "gebh: read_line returned -1");
             break;
         }
         // convert to hex
-        uid_in_policy = (unsigned int)strhex2num(uid_buf, UID_BUF_LEN);
-        inode_in_policy = strhex2num(inode_buf, INODE_BUF_LEN);
-        printk(KERN_INFO "%u:%lu\n", uid_in_policy, inode_in_policy);
-        // match
-        if(uid_in_policy == uid) {
-            if(inode_in_policy == inode) {
+        fval1 = strhex2num(buf1, len1);
+        fval2 = strhex2num(buf2, len2);
+        if(val1 == fval1) {
+            // match
+            if(match && *val2 == fval2) {
+                ret = 0;
+                break;
+            } else if (!match) {
+                // get val2
+                *val2 = fval2;
                 ret = 0;
                 break;
             }
@@ -147,5 +146,21 @@ int check_perm(unsigned int uid, unsigned long inode) {
     sys_close(fd);
     set_fs(old_fs);
     return ret;
+}
+
+int check_perm(unsigned int uid, unsigned long inode) {
+    unsigned long active_role = 0;
+    // if root, allow
+    if(uid == 0) return 0;
+    // get active role
+    if(0 != search_line(ACTIVE_ROLE_FILE, (unsigned long)uid, UID_BUF_LEN, &active_role, ROLE_BUF_LEN, 0)) {
+        return -EACCES;
+    }
+    // check permission
+    if(0 == search_line(POLICY_FILE, active_role, ROLE_BUF_LEN, &inode, INODE_BUF_LEN, 1)) {
+        return 0;
+    } else {
+        return -EACCES;
+    }
 }
 
