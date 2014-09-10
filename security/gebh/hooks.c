@@ -11,58 +11,28 @@ MODULE_DESCRIPTION("Goldeneye Bufflehead, a Role Based Access Control security\
  solution");
 MODULE_AUTHOR("Arun Olappamanna Vasudevan <arunov1986@gmail.com>");
 
-/*static void read_file(char *filename) {
-  int fd;
-  char buf[1];
-  char x = 'x';
-
-  mm_segment_t old_fs = get_fs();
-  set_fs(KERNEL_DS);
-
-  fd = sys_open(filename, O_RDWR, 0);
-
-  if (fd >= 0) {
-    printk(KERN_DEBUG);
-    while (sys_read(fd, buf, 1) == 1)
-      printk("%c", buf[0]);
-    printk("\n");
-    sys_lseek(fd, -1, SEEK_CUR);
-    sys_write(fd, &x, 1);
-    sys_close(fd);
-  }
-  set_fs(old_fs);
-}*/
-
 int gebh_inode_create(struct inode *dir, struct dentry *dentry, umode_t mode) {
-    printk(KERN_INFO "%s, %lu\n", __func__, dir->i_ino);
-    printk(KERN_INFO "%s, Current user id: %u\n", __func__, current_uid().val);
-    if(dir->i_ino == 202738620) {
-        printk(KERN_INFO "%s, permission denied\n", __func__);
-        return -EACCES;
-    }
-    //read_file("/root/tfile");
-    check_perm(current_uid().val, dir->i_ino);
-    return 0;
+    return check_perm(current_uid().val, dir->i_ino);
 }
 
 int gebh_inode_unlink(struct inode *dir, struct dentry *dentry) {
-    printk(KERN_INFO "%s, %lu", __func__, dir->i_ino);
+    return check_perm(current_uid().val, dir->i_ino);
     return 0;
 }
 
 int gebh_inode_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode) {
-    printk(KERN_INFO "%s, %lu", __func__, dir->i_ino);
-    return 0;
+    return check_perm(current_uid().val, dir->i_ino);
+    // TODO: if dir is listed in policy, add entry to allow access
 }
 
 int gebh_inode_rmdir(struct inode *dir, struct dentry *dentry) {
-    printk(KERN_INFO "%s, %lu", __func__, dir->i_ino);
-    return 0;
+    return check_perm(current_uid().val, dir->i_ino);
+    // TODO: if dir is listed in policy, remove entry
 }
 
 int gebh_inode_rename(struct inode *old_dir, struct dentry *old_dentry,
                             struct inode *new_dir, struct dentry *new_dentry) {
-    return 0;
+    return check_perm(current_uid().val, old_dir->i_ino);
 }
 
 struct security_operations gebh_ops = {
