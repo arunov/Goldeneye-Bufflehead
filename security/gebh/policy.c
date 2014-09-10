@@ -80,24 +80,24 @@ static inline int read_line(int fd, char *uid_buf, char *inode_buf, int *eof) {
     }
 }
 
-static inline unsigned long char2hex(char c) {
+static inline unsigned long charhex2num(char c) {
     if(c >= '0' && c <= '9')
         return (unsigned long)(c - '0');
     if(c >= 'a' && c <= 'f')
-        return (unsigned long)(c - 'a');
+        return (unsigned long)(c - 'a' + 10);
     if(c >= 'A' && c <= 'F')
-        return (unsigned long)(c - 'A');
+        return (unsigned long)(c - 'A' + 10);
     return 0;
 }
 
-static inline unsigned long str2hex(char *buf, int len) {
+static inline unsigned long strhex2num(char *buf, int len) {
     int i;
-    unsigned long place = 1<<((len-1)*4);
+    unsigned long place = 1;
     unsigned long value = 0;
-    for(i = 0; i < len; i ++) {
+    for(i = len-1; i >= 0; i --) {
         if(!IS_HEX(*(buf+i))) return 0;
-        value += place * char2hex(*(buf + i));
-        place >>= 4;
+        value += place * charhex2num(*(buf+i));
+        place *= 16;
     }
     return value;
 }
@@ -107,37 +107,45 @@ int check_perm(unsigned int uid, unsigned long inode) {
     char inode_buf[INODE_BUF_LEN + 1];
     int fd;
     int eof;
+    int ret;
+    unsigned int uid_in_policy;
+    unsigned long inode_in_policy;
     mm_segment_t old_fs;
-
     uid_buf[UID_BUF_LEN] = '\0';
     inode_buf[INODE_BUF_LEN] = '\0';
-
     // if root, allow
     if(uid == 0) return 0;
-
     old_fs = get_fs();
     set_fs(KERNEL_DS);
     // open policy file
     fd = sys_open(POLICY_FILE, O_RDONLY, 0);
     if(fd < 0) {
         printk(KERN_INFO "gebh: unable to open policy file");
+        set_fs(old_fs);
         return -EACCES;
     }
-
+    ret = -EACCES;
     while(1) {
         // read line
         if(read_line(fd, uid_buf, inode_buf, &eof) == -1) {
             printk(KERN_INFO "gebh: read_line returned -1");
-            // deny access
-            sys_close(fd);
-            set_fs(old_fs);
-            return -EACCES;
+            break;
         }
-        printk(KERN_INFO "%s:%s\n", uid_buf, inode_buf);
+        // convert to hex
+        uid_in_policy = (unsigned int)strhex2num(uid_buf, UID_BUF_LEN);
+        inode_in_policy = strhex2num(inode_buf, INODE_BUF_LEN);
+        printk(KERN_INFO "%u:%lu\n", uid_in_policy, inode_in_policy);
+        // match
+        if(uid_in_policy == uid) {
+            if(inode_in_policy == inode) {
+                ret = 0;
+                break;
+            }
+        }
         if(eof) break;
     }
     sys_close(fd);
     set_fs(old_fs);
-    return 0;
+    return ret;
 }
 
