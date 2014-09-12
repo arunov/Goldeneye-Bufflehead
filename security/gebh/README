@@ -4,6 +4,17 @@ By Arun Olappamanna Vasudevan
 
 This is a role based access control mechanism.
 
+Kernel module
+-------------
+(1) Copy this folder to security/ in kernel source code
+(2) Add following lines in security/Makefile
+subdir-$(CONFIG_SECURITY_GEBH)      += gebh
+obj-$(CONFIG_SECURITY_GEBH)     += gebh/built-in.o
+(3) Add following line in security/Kconfig
+source security/gebh/Kconfig
+(4) Add following line in .config
+CONFIG_SECURITY_GEBH=y
+
 files in /etc/
 --------------
 gebh_role_id: List of role names and ids
