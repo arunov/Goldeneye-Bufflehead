@@ -1,0 +1,31 @@
+Goldeneye Bufflehead Security
+-----------------------------
+By Arun Olappamanna Vasudevan
+
+This is a role based access control mechanism.
+
+files in /etc/
+--------------
+gebh_role_id: List of role names and ids
+gebh_user_role: User name and roles that user is authorized to take
+gebh_policy: Role id and inodes that are authorized to use
+gebh_active_role: User id and role id that user is currently active in
+
+Managing files in /etc
+----------------------
+(1) Move gebh_manager.py to /sbin/
+(2) gebh_manager.py --help
+
+Admin mode
+----------
+root is treated as admin
+
+Limitations
+-----------
+- You don't directly get to use a folder that you create as a non-admin user
+- gebh_active_role is a accessible to all users
+- If a dir is removed, it is not removed from policy file <- could lead to exploits
+- File parsing is done in kernel module - considered a very bad practice
+- Design did not consider performance into consideration
+- There is no way folders added can be listed. Only inode numbers can be found in /etc/gebh_policy
+
