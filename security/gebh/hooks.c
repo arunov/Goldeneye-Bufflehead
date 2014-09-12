@@ -17,17 +17,14 @@ int gebh_inode_create(struct inode *dir, struct dentry *dentry, umode_t mode) {
 
 int gebh_inode_unlink(struct inode *dir, struct dentry *dentry) {
     return check_perm(current_uid().val, dir->i_ino);
-    return 0;
 }
 
 int gebh_inode_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode) {
     return check_perm(current_uid().val, dir->i_ino);
-    // TODO: if dir is listed in policy, add entry to allow access
 }
 
 int gebh_inode_rmdir(struct inode *dir, struct dentry *dentry) {
     return check_perm(current_uid().val, dir->i_ino);
-    // TODO: if dir is listed in policy, remove entry
 }
 
 int gebh_inode_rename(struct inode *old_dir, struct dentry *old_dentry,
