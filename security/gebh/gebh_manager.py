@@ -412,23 +412,23 @@ args=parser.parse_args()
 
 
 if args.addrole:
-    check_root
+    check_root()
     add_role(args.role)
 
 if args.auth:
-    check_root
+    check_root()
     auth_role_for_user(args.auth, args.role)
 
 if args.deauth:
-    check_root
+    check_root()
     deauth_role_for_user(args.deauth, args.role)
 
 if args.adddir:
-    check_root
+    check_root()
     add_folder_in_policy(args.adddir, args.role)
 
 if args.rmdir:
-    check_root
+    check_root()
     rm_folder_in_policy(args.rmdir, args.role)
 
 if args.activate:
